@@ -1,27 +1,40 @@
 import 'package:bookia/core/theme/app_colors.dart';
 import 'package:bookia/features/cart/presentation/cubit/cart_cubit.dart';
+import 'package:bookia/features/home/data/repositories/book_repository_impl.dart';
 import 'package:bookia/features/home/domain/entities/book_entity.dart';
+import 'package:bookia/features/home/domain/usecases/get_book_details_usecase.dart';
+import 'package:bookia/features/home/domain/usecases/get_books_usecase.dart';
 import 'package:bookia/features/home/presentation/cubit/book_cubit.dart';
 import 'package:bookia/features/home/presentation/cubit/book_state.dart';
 import 'package:bookia/features/wishlist/presentation/cubit/wishlist_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class BookDetailsPage extends StatefulWidget {
+/// Book Details gets its own [BookCubit] instance (instead of reusing the
+/// Home tab's shared one) so opening a book can't overwrite the book list
+/// state that the Home tab's BlocBuilder relies on.
+class BookDetailsPage extends StatelessWidget {
   final int bookId;
 
   const BookDetailsPage({super.key, required this.bookId});
 
   @override
-  State<BookDetailsPage> createState() => _BookDetailsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider<BookCubit>(
+      create: (_) {
+        final repo = BookRepositoryImpl();
+        return BookCubit(
+          getBooksUseCase: GetBooksUseCase(repo),
+          getBookDetailsUseCase: GetBookDetailsUseCase(repo),
+        )..loadBookDetails(bookId);
+      },
+      child: const _BookDetailsView(),
+    );
+  }
 }
 
-class _BookDetailsPageState extends State<BookDetailsPage> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<BookCubit>().loadBookDetails(widget.bookId);
-  }
+class _BookDetailsView extends StatelessWidget {
+  const _BookDetailsView();
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +57,10 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
             return Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -54,8 +70,9 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                       ),
                       BlocBuilder<WishlistCubit, List<BookEntity>>(
                         builder: (context, wishlist) {
-                          final inWishlist =
-                              context.read<WishlistCubit>().isInWishlist(book.id);
+                          final inWishlist = context
+                              .read<WishlistCubit>()
+                              .isInWishlist(book.id);
                           return _RoundIconButton(
                             icon: inWishlist
                                 ? Icons.bookmark
@@ -85,8 +102,11 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                               height: 260,
                               width: 190,
                               color: Colors.white,
-                              child: const Icon(Icons.menu_book_rounded,
-                                  size: 48, color: AppColors.gold),
+                              child: const Icon(
+                                Icons.menu_book_rounded,
+                                size: 48,
+                                color: AppColors.gold,
+                              ),
                             ),
                           ),
                         ),

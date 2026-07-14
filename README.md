@@ -1,6 +1,7 @@
-# bookia
+# bBOOKIA
 
 A new Flutter project.
+![App Demo](assets/app.gif)
 
 ## Getting Started
 
